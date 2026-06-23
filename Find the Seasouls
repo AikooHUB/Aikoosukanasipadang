@@ -1,0 +1,436 @@
+-- Teleport Hub · Seasouls & Shell (Clean Layout) by SPRUY DARK AI
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+
+local p = Players.LocalPlayer
+local PlayerGui = p:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TeleportHub_iOS"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- ==================== FOLDER TARGET ====================
+local seasoulsFolder = workspace:FindFirstChild("Seasouls")
+local conchasFolder = workspace:FindFirstChild("ConchasSalvajes")
+
+-- Tunggu maksimal 10 detik
+local waited = 0
+while (not seasoulsFolder or not conchasFolder) and waited < 10 do
+	task.wait(0.5)
+	if not seasoulsFolder then
+		seasoulsFolder = workspace:FindFirstChild("Seasouls")
+		if not seasoulsFolder then
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("Folder") and v.Name == "Seasouls" then seasoulsFolder = v break end
+			end
+		end
+	end
+	if not conchasFolder then
+		conchasFolder = workspace:FindFirstChild("ConchasSalvajes")
+		if not conchasFolder then
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("Folder") and v.Name == "ConchasSalvajes" then conchasFolder = v break end
+			end
+		end
+	end
+	waited = waited + 0.5
+end
+
+-- ==================== FUNGSI UTAMA ====================
+local currentTarget = "seasouls"
+local stop = false
+local autoTP = false
+local stopTP = false
+
+-- Dapatkan posisi teleport dari objek
+local function getPosition(obj)
+	if obj:IsA("BasePart") then return obj.Position
+	elseif obj:IsA("Model") then
+		local pp = obj.PrimaryPart
+		if pp then return pp.Position end
+		local part = obj:FindFirstChildWhichIsA("BasePart")
+		if part then return part.Position end
+	end
+	return nil
+end
+
+-- Ambil item sesuai target (Summer01-40 atau Shell1-n)
+local function getItems()
+	local items = {}
+	if currentTarget == "seasouls" and seasoulsFolder then
+		for _, child in ipairs(seasoulsFolder:GetChildren()) do
+			local name = child.Name
+			local num = string.match(name, "^Summer(%d+)$")
+			if num then
+				local n = tonumber(num)
+				if n and n >= 1 and n <= 40 then
+					local pos = getPosition(child)
+					if pos then
+						table.insert(items, {Name = name, Position = pos + Vector3.new(0, 5, 0)})
+					end
+				end
+			end
+		end
+		table.sort(items, function(a,b)
+			return (tonumber(string.match(a.Name, "%d+")) or 0) < (tonumber(string.match(b.Name, "%d+")) or 0)
+		end)
+	elseif currentTarget == "shell" and conchasFolder then
+		for _, child in ipairs(conchasFolder:GetChildren()) do
+			local name = child.Name
+			if name:match("^Shell") then
+				local pos = getPosition(child)
+				if pos then
+					table.insert(items, {Name = name, Position = pos + Vector3.new(0, 5, 0)})
+				end
+			end
+		end
+		table.sort(items, function(a,b) return a.Name < b.Name end)
+	end
+	return items
+end
+
+-- Teleport semua item (bisa dihentikan lewat stopTP)
+local function teleportAll()
+	local items = getItems()
+	if #items == 0 then return end
+	for _, item in ipairs(items) do
+		if stopTP or stop then break end
+		local char = p.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = CFrame.new(item.Position)
+		end
+		task.wait(0.8)
+	end
+end
+
+-- Loop Auto TP
+local function autoTPLoop()
+	while autoTP and not stop do
+		teleportAll()
+		task.wait(1)
+	end
+end
+
+-- ==================== GUI ====================
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 320, 0, 400)
+Main.Position = UDim2.new(0.5, -160, 0.5, -200)
+Main.BackgroundColor3 = Color3.fromRGB(22,22,22)
+Main.BackgroundTransparency = 0.20
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0,18)
+Corner.Parent = Main
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(65,65,65)
+Stroke.Thickness = 1
+Stroke.Transparency = 0.35
+Stroke.Parent = Main
+
+-- TopBar
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1,0,0,40)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-100,1,0)
+Title.Position = UDim2.new(0,15,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "Seasouls/Shell"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0,24,0,24)
+MinBtn.Position = UDim2.new(1,-65,0.5,-12)
+MinBtn.Text = "−"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 18
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(255,189,46)
+MinBtn.Parent = TopBar
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(1,0)
+MinCorner.Parent = MinBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,24,0,24)
+CloseBtn.Position = UDim2.new(1,-35,0.5,-12)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 18
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255,95,86)
+CloseBtn.Parent = TopBar
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(1,0)
+CloseCorner.Parent = CloseBtn
+
+-- Content frame
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-20,1,-55)
+Content.Position = UDim2.new(0,10,0,45)
+Content.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Content.BackgroundTransparency = 0.25
+Content.BorderSizePixel = 0
+Content.Parent = Main
+
+local ContentCorner = Instance.new("UICorner")
+ContentCorner.CornerRadius = UDim.new(0,14)
+ContentCorner.Parent = Content
+
+local ContentStroke = Instance.new("UIStroke")
+ContentStroke.Color = Color3.fromRGB(55,55,55)
+ContentStroke.Thickness = 1
+ContentStroke.Transparency = 0.45
+ContentStroke.Parent = Content
+
+-- ===== BARIS 1: Tombol target (Seasouls / Shell) =====
+local targetBar = Instance.new("Frame")
+targetBar.Size = UDim2.new(1,-10,0,32)
+targetBar.Position = UDim2.new(0,5,0,6)
+targetBar.BackgroundTransparency = 1
+targetBar.Parent = Content
+
+local seasoulsBtn = Instance.new("TextButton")
+seasoulsBtn.Size = UDim2.new(0.5,-4,1,0)
+seasoulsBtn.Position = UDim2.new(0,0,0,0)
+seasoulsBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)  -- aktif default
+seasoulsBtn.BackgroundTransparency = 0.15
+seasoulsBtn.Text = "Seasouls"
+seasoulsBtn.TextColor3 = Color3.new(1,1,1)
+seasoulsBtn.Font = Enum.Font.GothamBold
+seasoulsBtn.TextSize = 13
+seasoulsBtn.BorderSizePixel = 0
+seasoulsBtn.Parent = targetBar
+Instance.new("UICorner", seasoulsBtn).CornerRadius = UDim.new(0,10)
+
+local shellBtn = Instance.new("TextButton")
+shellBtn.Size = UDim2.new(0.5,-4,1,0)
+shellBtn.Position = UDim2.new(0.5,4,0,0)
+shellBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+shellBtn.BackgroundTransparency = 0.15
+shellBtn.Text = "Shell"
+shellBtn.TextColor3 = Color3.new(1,1,1)
+shellBtn.Font = Enum.Font.GothamBold
+shellBtn.TextSize = 13
+shellBtn.BorderSizePixel = 0
+shellBtn.Parent = targetBar
+Instance.new("UICorner", shellBtn).CornerRadius = UDim.new(0,10)
+
+-- ===== BARIS 2: Refresh (kiri) dan Auto TP (kanan) =====
+local controlBar = Instance.new("Frame")
+controlBar.Size = UDim2.new(1,-10,0,32)
+controlBar.Position = UDim2.new(0,5,0,44)
+controlBar.BackgroundTransparency = 1
+controlBar.Parent = Content
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(0.5,-4,1,0)
+refreshBtn.Position = UDim2.new(0,0,0,0)
+refreshBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+refreshBtn.BackgroundTransparency = 0.15
+refreshBtn.Text = "Refresh"
+refreshBtn.TextColor3 = Color3.new(1,1,1)
+refreshBtn.Font = Enum.Font.GothamBold
+refreshBtn.TextSize = 13
+refreshBtn.BorderSizePixel = 0
+refreshBtn.Parent = controlBar
+Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0,8)
+
+local autoTpBtn = Instance.new("TextButton")
+autoTpBtn.Size = UDim2.new(0.5,-4,1,0)
+autoTpBtn.Position = UDim2.new(0.5,4,0,0)
+autoTpBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+autoTpBtn.BackgroundTransparency = 0.15
+autoTpBtn.Text = "Auto TP: OFF"
+autoTpBtn.TextColor3 = Color3.new(1,1,1)
+autoTpBtn.Font = Enum.Font.GothamBold
+autoTpBtn.TextSize = 12
+autoTpBtn.BorderSizePixel = 0
+autoTpBtn.Parent = controlBar
+Instance.new("UICorner", autoTpBtn).CornerRadius = UDim.new(0,8)
+
+-- ===== LIST ITEMS =====
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1,-10,1,-90)
+list.Position = UDim2.new(0,5,0,82)  -- mulai setelah controlBar
+list.BackgroundColor3 = Color3.fromRGB(44,44,46)
+list.BackgroundTransparency = 0.12
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 3
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.Parent = Content
+Instance.new("UICorner", list).CornerRadius = UDim.new(0,10)
+
+local layout = Instance.new("UIListLayout")
+layout.Parent = list
+layout.Padding = UDim.new(0,4)
+
+-- ==================== DRAG ====================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function updateDrag(input)
+	local delta = input.Position - dragStart
+	Main.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+TopBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		updateDrag(input)
+	end
+end)
+
+-- ==================== MINIMIZE / CLOSE ====================
+local Minimized = false
+local FullSize = Main.Size
+
+MinBtn.MouseButton1Click:Connect(function()
+	Minimized = not Minimized
+	if Minimized then
+		Content.Visible = false
+		TweenService:Create(
+			Main,
+			TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+			{Size = UDim2.new(0,320,0,40)}
+		):Play()
+	else
+		TweenService:Create(
+			Main,
+			TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+			{Size = FullSize}
+		):Play()
+		task.wait(0.2)
+		Content.Visible = true
+	end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+	stop = true
+	autoTP = false
+	stopTP = true
+	local Tween = TweenService:Create(
+		Main,
+		TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+		{Size = UDim2.new(0,0,0,0)}
+	)
+	Tween:Play()
+	Tween.Completed:Wait()
+	ScreenGui:Destroy()
+end)
+
+-- ==================== LOGIC ====================
+local function populate()
+	for _, v in ipairs(list:GetChildren()) do
+		if v:IsA("TextButton") or v:IsA("Frame") then v:Destroy() end
+	end
+	local items = getItems()
+	for i, item in ipairs(items) do
+		local row = Instance.new("TextButton")
+		row.Size = UDim2.new(1, -4, 0, 28)
+		row.BackgroundColor3 = Color3.fromRGB(58,58,60)
+		row.BackgroundTransparency = 0.35
+		row.BorderSizePixel = 0
+		row.Text = ""
+		row.AutoButtonColor = false
+		row.Parent = list
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0,6)
+
+		local txt = Instance.new("TextLabel")
+		txt.Size = UDim2.new(1, -20, 1, 0)
+		txt.Position = UDim2.new(0, 10, 0, 0)
+		txt.BackgroundTransparency = 1
+		txt.Text = "●  " .. item.Name .. "                      ›"
+		txt.TextColor3 = Color3.new(1,1,1)
+		txt.Font = Enum.Font.Gotham
+		txt.TextSize = 13
+		txt.TextXAlignment = Enum.TextXAlignment.Left
+		txt.Parent = row
+
+		row.MouseButton1Click:Connect(function()
+			local char = p.Character
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				char.HumanoidRootPart.CFrame = CFrame.new(item.Position)
+			end
+		end)
+
+		row.MouseEnter:Connect(function()
+			TweenService:Create(row, TweenInfo.new(0.15), {BackgroundTransparency = 0.0}):Play()
+		end)
+		row.MouseLeave:Connect(function()
+			TweenService:Create(row, TweenInfo.new(0.15), {BackgroundTransparency = 0.35}):Play()
+		end)
+	end
+	list.CanvasSize = UDim2.new(0,0,0, #items * 32 + 10)
+end
+
+-- Event tombol
+seasoulsBtn.MouseButton1Click:Connect(function()
+	currentTarget = "seasouls"
+	seasoulsBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+	shellBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+	populate()
+end)
+
+shellBtn.MouseButton1Click:Connect(function()
+	currentTarget = "shell"
+	shellBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+	seasoulsBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+	populate()
+end)
+
+refreshBtn.MouseButton1Click:Connect(populate)
+
+autoTpBtn.MouseButton1Click:Connect(function()
+	if autoTP then
+		autoTP = false
+		stopTP = true
+		autoTpBtn.Text = "Auto TP: OFF"
+		autoTpBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+	else
+		autoTP = true
+		stopTP = false
+		autoTpBtn.Text = "Auto TP: ON"
+		autoTpBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+		task.spawn(autoTPLoop)
+	end
+end)
+
+-- Inisialisasi
+populate()
