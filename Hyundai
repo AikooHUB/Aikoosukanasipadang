@@ -1,0 +1,431 @@
+-- Hyundai Treasure & Worldcup Box · iOS Panel by SPRUY DARK AI
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HyundaiWCB_iOS"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- ==================== iOS PANEL ====================
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 320, 0, 320) -- sedikit lebih tinggi untuk tombol tambahan
+Main.Position = UDim2.new(0.5, -160, 0.5, -160)
+Main.BackgroundColor3 = Color3.fromRGB(22,22,22)
+Main.BackgroundTransparency = 0.20
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,18)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(65,65,65)
+Main:FindFirstChildOfClass("UIStroke").Thickness = 1
+Main:FindFirstChildOfClass("UIStroke").Transparency = 0.35
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1,0,0,40)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-100,1,0)
+Title.Position = UDim2.new(0,15,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "Treasure / Worldcup"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0,24,0,24)
+MinBtn.Position = UDim2.new(1,-65,0.5,-12)
+MinBtn.Text = "−"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 18
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(255,189,46)
+MinBtn.Parent = TopBar
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,24,0,24)
+CloseBtn.Position = UDim2.new(1,-35,0.5,-12)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 18
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255,95,86)
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1,0)
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-20,1,-55)
+Content.Position = UDim2.new(0,10,0,45)
+Content.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Content.BackgroundTransparency = 0.25
+Content.BorderSizePixel = 0
+Content.Parent = Main
+Instance.new("UICorner", Content).CornerRadius = UDim.new(0,14)
+Instance.new("UIStroke", Content).Color = Color3.fromRGB(55,55,55)
+Content:FindFirstChildOfClass("UIStroke").Thickness = 1
+Content:FindFirstChildOfClass("UIStroke").Transparency = 0.45
+
+-- ==================== DRAG ====================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	Main.Position = UDim2.new(
+		startPos.X.Scale,
+		startPos.X.Offset + delta.X,
+		startPos.Y.Scale,
+		startPos.Y.Offset + delta.Y
+	)
+end
+
+TopBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+
+-- ==================== MINIMIZE / CLOSE ====================
+local Minimized = false
+local FullSize = Main.Size
+
+MinBtn.MouseButton1Click:Connect(function()
+	Minimized = not Minimized
+	if Minimized then
+		Content.Visible = false
+		TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(0,320,0,40) }):Play()
+	else
+		TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = FullSize }):Play()
+		task.wait(0.2)
+		Content.Visible = true
+	end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+	stop = true
+	autoTP = false
+	TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = UDim2.new(0,0,0,0) }):Play().Completed:Wait()
+	ScreenGui:Destroy()
+end)
+
+-- ==================== DATA FOLDER ====================
+local treasureFolder = nil
+local worldcupFolder = nil
+
+local function findFolders()
+	-- TreasurePartFolder
+	treasureFolder = Workspace:FindFirstChild("TreasurePartFolder")
+	if not treasureFolder then
+		for _, obj in ipairs(Workspace:GetDescendants()) do
+			if obj:IsA("Folder") and obj.Name == "TreasurePartFolder" then
+				treasureFolder = obj
+				break
+			end
+		end
+	end
+	-- Worldcup_Box
+	worldcupFolder = Workspace:FindFirstChild("Worldcup_Box")
+	if not worldcupFolder then
+		for _, obj in ipairs(Workspace:GetDescendants()) do
+			if obj:IsA("Folder") and obj.Name == "Worldcup_Box" then
+				worldcupFolder = obj
+				break
+			end
+		end
+	end
+end
+findFolders()
+
+-- Background loop pencarian folder
+spawn(function()
+	while not treasureFolder or not worldcupFolder do
+		task.wait(0.5)
+		findFolders()
+	end
+end)
+
+-- ==================== FUNGSI UTAMA ====================
+local currentTarget = "treasure" -- "treasure" atau "worldcup"
+local stop = false
+local autoTP = false
+local bypass = false
+
+local function getPosition(obj)
+	if obj:IsA("BasePart") then
+		return obj.Position
+	elseif obj:IsA("Model") then
+		local pp = obj.PrimaryPart
+		if pp then return pp.Position end
+		local part = obj:FindFirstChildWhichIsA("BasePart")
+		if part then return part.Position end
+	elseif obj:IsA("Folder") then
+		for _, child in ipairs(obj:GetDescendants()) do
+			if child:IsA("BasePart") then return child.Position end
+		end
+	end
+	return nil
+end
+
+local function getItems()
+	local folder = currentTarget == "treasure" and treasureFolder or worldcupFolder
+	local items = {}
+	if not folder then return items end
+	for _, child in ipairs(folder:GetChildren()) do
+		local pos = getPosition(child)
+		if pos then
+			table.insert(items, {Name = child.Name, Position = pos + Vector3.new(0, 5, 0)})
+		end
+	end
+	table.sort(items, function(a,b) return a.Name < b.Name end)
+	return items
+end
+
+local function teleportAll()
+	local items = getItems()
+	if #items == 0 then return end
+	local delayTime = bypass and 0 or 0.8
+	for _, item in ipairs(items) do
+		if stop or not autoTP then break end
+		local char = Player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = CFrame.new(item.Position)
+		end
+		task.wait(delayTime)
+	end
+end
+
+local function autoTPLoop()
+	while autoTP and not stop do
+		teleportAll()
+		task.wait(bypass and 0.5 or 1)
+	end
+end
+
+-- ==================== UI ELEMENTS ====================
+-- Baris tombol target
+local targetBar = Instance.new("Frame")
+targetBar.Size = UDim2.new(1,0,0,32)
+targetBar.Position = UDim2.new(0,4,0,4)
+targetBar.BackgroundTransparency = 1
+targetBar.Parent = Content
+
+local treasureBtn = Instance.new("TextButton")
+treasureBtn.Size = UDim2.new(0.5,-4,1,0)
+treasureBtn.Position = UDim2.new(0,0,0,0)
+treasureBtn.BackgroundColor3 = Color3.fromRGB(10,132,255) -- aktif default
+treasureBtn.BackgroundTransparency = 0.15
+treasureBtn.Text = "Treasure"
+treasureBtn.TextColor3 = Color3.new(1,1,1)
+treasureBtn.Font = Enum.Font.GothamBold
+treasureBtn.TextSize = 13
+treasureBtn.BorderSizePixel = 0
+treasureBtn.Parent = targetBar
+Instance.new("UICorner", treasureBtn).CornerRadius = UDim.new(0,10)
+
+local worldcupBtn = Instance.new("TextButton")
+worldcupBtn.Size = UDim2.new(0.5,-4,1,0)
+worldcupBtn.Position = UDim2.new(0.5,4,0,0)
+worldcupBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+worldcupBtn.BackgroundTransparency = 0.15
+worldcupBtn.Text = "Worldcup Box"
+worldcupBtn.TextColor3 = Color3.new(1,1,1)
+worldcupBtn.Font = Enum.Font.GothamBold
+worldcupBtn.TextSize = 12
+worldcupBtn.BorderSizePixel = 0
+worldcupBtn.Parent = targetBar
+Instance.new("UICorner", worldcupBtn).CornerRadius = UDim.new(0,10)
+
+-- Baris kontrol: Refresh & Auto TP
+local controlBar = Instance.new("Frame")
+controlBar.Size = UDim2.new(1,0,0,32)
+controlBar.Position = UDim2.new(0,4,0,40)
+controlBar.BackgroundTransparency = 1
+controlBar.Parent = Content
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(0.48,0,1,0)
+refreshBtn.Position = UDim2.new(0,0,0,0)
+refreshBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+refreshBtn.BackgroundTransparency = 0.15
+refreshBtn.Text = "Refresh"
+refreshBtn.TextColor3 = Color3.new(1,1,1)
+refreshBtn.Font = Enum.Font.GothamBold
+refreshBtn.TextSize = 13
+refreshBtn.BorderSizePixel = 0
+refreshBtn.Parent = controlBar
+Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0,8)
+
+local autoBtn = Instance.new("TextButton")
+autoBtn.Size = UDim2.new(0.48,0,1,0)
+autoBtn.Position = UDim2.new(0.52,0,0,0)
+autoBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+autoBtn.BackgroundTransparency = 0.15
+autoBtn.Text = "Auto TP: OFF"
+autoBtn.TextColor3 = Color3.new(1,1,1)
+autoBtn.Font = Enum.Font.GothamBold
+autoBtn.TextSize = 12
+autoBtn.BorderSizePixel = 0
+autoBtn.Parent = controlBar
+Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
+
+-- Baris Bypass
+local row2 = Instance.new("Frame")
+row2.Size = UDim2.new(1,0,0,32)
+row2.Position = UDim2.new(0,4,0,76)
+row2.BackgroundTransparency = 1
+row2.Parent = Content
+
+local bypassBtn = Instance.new("TextButton")
+bypassBtn.Size = UDim2.new(1,0,1,0)
+bypassBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+bypassBtn.BackgroundTransparency = 0.15
+bypassBtn.Text = "Bypass: OFF"
+bypassBtn.TextColor3 = Color3.new(1,1,1)
+bypassBtn.Font = Enum.Font.GothamBold
+bypassBtn.TextSize = 13
+bypassBtn.BorderSizePixel = 0
+bypassBtn.Parent = row2
+Instance.new("UICorner", bypassBtn).CornerRadius = UDim.new(0,8)
+
+-- Daftar item
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1,0,1,-126)
+list.Position = UDim2.new(0,4,0,112)
+list.BackgroundColor3 = Color3.fromRGB(44,44,46)
+list.BackgroundTransparency = 0.12
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 3
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.Parent = Content
+Instance.new("UICorner", list).CornerRadius = UDim.new(0,8)
+
+local layout = Instance.new("UIListLayout")
+layout.Parent = list
+layout.Padding = UDim.new(0,2)
+
+-- ==================== LOGIC ====================
+local function populate()
+	for _, v in ipairs(list:GetChildren()) do
+		if v:IsA("TextButton") or v:IsA("Frame") then v:Destroy() end
+	end
+
+	local folder = currentTarget == "treasure" and treasureFolder or worldcupFolder
+	if not folder then
+		local lbl = Instance.new("TextLabel", list)
+		lbl.Size = UDim2.new(1,0,0,24)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = (currentTarget == "treasure" and "TreasurePartFolder" or "Worldcup_Box") .. " not found"
+		lbl.TextColor3 = Color3.fromRGB(174,174,178)
+		lbl.Font = Enum.Font.Gotham
+		lbl.TextSize = 12
+		lbl.TextXAlignment = Enum.TextXAlignment.Center
+		return
+	end
+
+	local items = getItems()
+	for i, item in ipairs(items) do
+		local row = Instance.new("TextButton", list)
+		row.Size = UDim2.new(1, -4, 0, 24)
+		row.BackgroundColor3 = Color3.fromRGB(58,58,60)
+		row.BackgroundTransparency = 0.35
+		row.BorderSizePixel = 0
+		row.Text = ""
+		row.AutoButtonColor = false
+		Instance.new("UICorner", row).CornerRadius = UDim.new(0,6)
+
+		local txt = Instance.new("TextLabel", row)
+		txt.Size = UDim2.new(1, -20, 1, 0)
+		txt.Position = UDim2.new(0, 8, 0, 0)
+		txt.BackgroundTransparency = 1
+		txt.Text = "●  " .. item.Name .. "                      ›"
+		txt.TextColor3 = Color3.new(1,1,1)
+		txt.Font = Enum.Font.Gotham
+		txt.TextSize = 11
+		txt.TextXAlignment = Enum.TextXAlignment.Left
+
+		row.MouseButton1Click:Connect(function()
+			local char = Player.Character
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				char.HumanoidRootPart.CFrame = CFrame.new(item.Position)
+			end
+		end)
+	end
+
+	task.wait()
+	list.CanvasSize = UDim2.new(0,0,0, layout.AbsoluteContentSize.Y + 8)
+end
+
+-- Event tombol target
+treasureBtn.MouseButton1Click:Connect(function()
+	currentTarget = "treasure"
+	treasureBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+	worldcupBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+	populate()
+end)
+
+worldcupBtn.MouseButton1Click:Connect(function()
+	currentTarget = "worldcup"
+	worldcupBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+	treasureBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+	populate()
+end)
+
+refreshBtn.MouseButton1Click:Connect(populate)
+
+autoBtn.MouseButton1Click:Connect(function()
+	autoTP = not autoTP
+	autoBtn.Text = "Auto TP: " .. (autoTP and "ON" or "OFF")
+	autoBtn.BackgroundColor3 = autoTP and Color3.fromRGB(10,132,255) or Color3.fromRGB(44,44,46)
+	if autoTP then
+		spawn(autoTPLoop)
+	end
+end)
+
+bypassBtn.MouseButton1Click:Connect(function()
+	bypass = not bypass
+	bypassBtn.Text = "Bypass: " .. (bypass and "ON" or "OFF")
+	bypassBtn.BackgroundColor3 = bypass and Color3.fromRGB(10,132,255) or Color3.fromRGB(44,44,46)
+end)
+
+-- Initial populate
+populate()
+
+-- Auto refresh
+spawn(function()
+	while not stop do
+		task.wait(3)
+		populate()
+	end
+end)
