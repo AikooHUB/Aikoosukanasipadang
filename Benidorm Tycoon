@@ -1,0 +1,459 @@
+-- Benidorm Tycoon · iOS Panel (5 Fitur) by SPRUY DARK AI
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Benidorm_iOS"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- ==================== POP UP FUNCTION ====================
+local activePopups = {}
+local function showPopup(text)
+    for _, p in ipairs(activePopups) do
+        if p and p.Parent then p:Destroy() end
+    end
+    table.clear(activePopups)
+
+    local popup = Instance.new("Frame")
+    popup.Size = UDim2.new(0, 300, 0, 60)
+    popup.Position = UDim2.new(0.5, -150, 0.5, -30)
+    popup.BackgroundColor3 = Color3.fromRGB(22,22,22)
+    popup.BackgroundTransparency = 1
+    popup.BorderSizePixel = 0
+    popup.Parent = ScreenGui
+    Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 14)
+    local stroke = Instance.new("UIStroke", popup)
+    stroke.Color = Color3.fromRGB(65,65,65)
+    stroke.Thickness = 1
+    stroke.Transparency = 0.35
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 1, 0)
+    label.Position = UDim2.new(0, 5, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255,255,255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 16
+    label.TextTransparency = 1
+    label.Parent = popup
+
+    table.insert(activePopups, popup)
+
+    TweenService:Create(popup, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0.25}):Play()
+    TweenService:Create(label, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+
+    task.delay(2.5, function()
+        if popup and popup.Parent then
+            TweenService:Create(popup, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+            TweenService:Create(label, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+            task.wait(0.5)
+            if popup and popup.Parent then popup:Destroy() end
+        end
+        for i, p in ipairs(activePopups) do
+            if p == popup then table.remove(activePopups, i) break end
+        end
+    end)
+end
+
+-- ==================== iOS PANEL ====================
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 320, 0, 460)  -- sedikit lebih tinggi untuk 5 item
+Main.Position = UDim2.new(0.5, -160, 0.5, -230)
+Main.BackgroundColor3 = Color3.fromRGB(22,22,22)
+Main.BackgroundTransparency = 0.20
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,18)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(65,65,65)
+Main:FindFirstChildOfClass("UIStroke").Thickness = 1
+Main:FindFirstChildOfClass("UIStroke").Transparency = 0.35
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1,0,0,40)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-100,1,0)
+Title.Position = UDim2.new(0,15,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "Benidorm Tycoon"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0,24,0,24)
+MinBtn.Position = UDim2.new(1,-65,0.5,-12)
+MinBtn.Text = "−"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 18
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(255,189,46)
+MinBtn.Parent = TopBar
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,24,0,24)
+CloseBtn.Position = UDim2.new(1,-35,0.5,-12)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 18
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255,95,86)
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1,0)
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-20,1,-55)
+Content.Position = UDim2.new(0,10,0,45)
+Content.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Content.BackgroundTransparency = 0.25
+Content.BorderSizePixel = 0
+Content.Parent = Main
+Instance.new("UICorner", Content).CornerRadius = UDim.new(0,14)
+Instance.new("UIStroke", Content).Color = Color3.fromRGB(55,55,55)
+Content:FindFirstChildOfClass("UIStroke").Thickness = 1
+Content:FindFirstChildOfClass("UIStroke").Transparency = 0.45
+
+-- ==================== DRAG ====================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- ==================== MINIMIZE / CLOSE ====================
+local Minimized = false
+local FullSize = Main.Size
+
+MinBtn.MouseButton1Click:Connect(function()
+    Minimized = not Minimized
+    if Minimized then
+        Content.Visible = false
+        TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(0,320,0,40) }):Play()
+    else
+        TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = FullSize }):Play()
+        task.wait(0.2)
+        Content.Visible = true
+    end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    for _, p in ipairs(activePopups) do
+        if p and p.Parent then p:Destroy() end
+    end
+    table.clear(activePopups)
+    ScreenGui:Destroy()
+end)
+
+-- ==================== TELEPORT FUNCTION ====================
+local function teleportToPath(pathTable)
+    local current = Workspace
+    for _, name in ipairs(pathTable) do
+        if not current then break end
+        local nextObj = current:FindFirstChild(name)
+        if nextObj then
+            current = nextObj
+        else
+            current = nil
+            break
+        end
+    end
+
+    if current then
+        local targetPart = nil
+        if current:IsA("BasePart") then
+            targetPart = current
+        elseif current:IsA("Model") then
+            targetPart = current.PrimaryPart or current:FindFirstChildWhichIsA("BasePart")
+        elseif current:IsA("Folder") then
+            for _, child in ipairs(current:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    targetPart = child
+                    break
+                end
+            end
+        end
+        if targetPart then
+            local char = Player.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = CFrame.new(targetPart.Position + Vector3.new(0, 5, 0))
+            end
+        end
+    end
+end
+
+-- ==================== MAIN CONTENT LIST ====================
+local mainList = Instance.new("ScrollingFrame")
+mainList.Size = UDim2.new(1,0,1,0)
+mainList.Position = UDim2.new(0,4,0,4)
+mainList.BackgroundTransparency = 1
+mainList.BorderSizePixel = 0
+mainList.ScrollBarThickness = 3
+mainList.CanvasSize = UDim2.new(0,0,0,0)
+mainList.Parent = Content
+Instance.new("UICorner", mainList).CornerRadius = UDim.new(0,8)
+
+local mainLayout = Instance.new("UIListLayout")
+mainLayout.Parent = mainList
+mainLayout.Padding = UDim.new(0,8)
+
+-- Helper membuat item
+local function createItem(parent, description, hasTp, tpPath, popupText)
+    local itemFrame = Instance.new("Frame")
+    itemFrame.Size = UDim2.new(1, -8, 0, 60)
+    itemFrame.BackgroundColor3 = Color3.fromRGB(44,44,46)
+    itemFrame.BackgroundTransparency = 0.15
+    itemFrame.BorderSizePixel = 0
+    itemFrame.Parent = parent
+    Instance.new("UICorner", itemFrame).CornerRadius = UDim.new(0,10)
+
+    local descLabel = Instance.new("TextLabel")
+    descLabel.Size = UDim2.new(1, -20, 0.6, 0)
+    descLabel.Position = UDim2.new(0,10,0,5)
+    descLabel.BackgroundTransparency = 1
+    descLabel.Text = description
+    descLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    descLabel.Font = Enum.Font.GothamBold
+    descLabel.TextSize = 13
+    descLabel.TextXAlignment = Enum.TextXAlignment.Left
+    descLabel.Parent = itemFrame
+
+    if hasTp then
+        local tpBtn = Instance.new("TextButton")
+        tpBtn.Size = UDim2.new(0,60,0,28)
+        tpBtn.Position = UDim2.new(1, -70, 0, 16)
+        tpBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+        tpBtn.BackgroundTransparency = 0.15
+        tpBtn.Text = "TP"
+        tpBtn.TextColor3 = Color3.new(1,1,1)
+        tpBtn.Font = Enum.Font.GothamBold
+        tpBtn.TextSize = 14
+        tpBtn.BorderSizePixel = 0
+        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0,6)
+        tpBtn.Parent = itemFrame
+
+        tpBtn.MouseButton1Click:Connect(function()
+            teleportToPath(tpPath)
+            if popupText then
+                showPopup(popupText)
+            end
+        end)
+    end
+
+    return itemFrame
+end
+
+-- ==================== ITEM 1: Finish Your Tycoon (tanpa TP) ====================
+createItem(mainList, "1. Finish Your Tycoon", false, nil, nil)
+
+-- ==================== ITEM 2: Complete Daily Mission (tanpa TP) ====================
+createItem(mainList, "2. Complete Daily Mission", false, nil, nil)
+
+-- ==================== ITEM 3: Defeat Basuro ====================
+local item3 = Instance.new("Frame")
+item3.Size = UDim2.new(1, -8, 0, 60)
+item3.BackgroundColor3 = Color3.fromRGB(44,44,46)
+item3.BackgroundTransparency = 0.15
+item3.BorderSizePixel = 0
+item3.Parent = mainList
+Instance.new("UICorner", item3).CornerRadius = UDim.new(0,10)
+
+local desc3 = Instance.new("TextLabel")
+desc3.Size = UDim2.new(1, -20, 0.6, 0)
+desc3.Position = UDim2.new(0,10,0,5)
+desc3.BackgroundTransparency = 1
+desc3.Text = "3. Defeat Basuro"
+desc3.TextColor3 = Color3.fromRGB(255,255,255)
+desc3.Font = Enum.Font.GothamBold
+desc3.TextSize = 13
+desc3.TextXAlignment = Enum.TextXAlignment.Left
+desc3.Parent = item3
+
+local tpBtn3 = Instance.new("TextButton")
+tpBtn3.Size = UDim2.new(0,60,0,28)
+tpBtn3.Position = UDim2.new(1, -70, 0, 5)
+tpBtn3.BackgroundColor3 = Color3.fromRGB(10,132,255)
+tpBtn3.BackgroundTransparency = 0.15
+tpBtn3.Text = "TP"
+tpBtn3.TextColor3 = Color3.new(1,1,1)
+tpBtn3.Font = Enum.Font.GothamBold
+tpBtn3.TextSize = 14
+tpBtn3.BorderSizePixel = 0
+Instance.new("UICorner", tpBtn3).CornerRadius = UDim.new(0,6)
+tpBtn3.Parent = item3
+
+tpBtn3.MouseButton1Click:Connect(function()
+    teleportToPath({"QuestSemanal1", "Contenedor"})
+    showPopup("Kumpulkan Sampah di Seluruh Kota")
+end)
+
+-- Area sampah
+local sampahFrame = Instance.new("Frame")
+sampahFrame.Size = UDim2.new(1, -8, 0, 120)
+sampahFrame.BackgroundColor3 = Color3.fromRGB(44,44,46)
+sampahFrame.BackgroundTransparency = 0.2
+sampahFrame.BorderSizePixel = 0
+sampahFrame.Parent = mainList
+Instance.new("UICorner", sampahFrame).CornerRadius = UDim.new(0,10)
+
+local sampahLabel = Instance.new("TextLabel")
+sampahLabel.Size = UDim2.new(1,0,0,24)
+sampahLabel.Position = UDim2.new(0,8,0,4)
+sampahLabel.BackgroundTransparency = 1
+sampahLabel.Text = "Sampah 1-11"
+sampahLabel.TextColor3 = Color3.fromRGB(200,200,200)
+sampahLabel.Font = Enum.Font.GothamBold
+sampahLabel.TextSize = 12
+sampahLabel.TextXAlignment = Enum.TextXAlignment.Left
+sampahLabel.Parent = sampahFrame
+
+local sampahList = Instance.new("ScrollingFrame")
+sampahList.Size = UDim2.new(1, -10, 1, -30)
+sampahList.Position = UDim2.new(0,5,0,30)
+sampahList.BackgroundTransparency = 1
+sampahList.BorderSizePixel = 0
+sampahList.ScrollBarThickness = 2
+sampahList.CanvasSize = UDim2.new(0,0,0,0)
+sampahList.Parent = sampahFrame
+Instance.new("UICorner", sampahList).CornerRadius = UDim.new(0,6)
+
+local sampahLayout = Instance.new("UIListLayout")
+sampahLayout.Parent = sampahList
+sampahLayout.Padding = UDim.new(0,4)
+
+local function populateSampah()
+    local qs1 = Workspace:FindFirstChild("QuestSemanal1")
+    if not qs1 then return end
+    local basura = qs1:FindFirstChild("Basura") or qs1:FindFirstChild("BasuraContenedor")
+    if not basura then
+        for _, child in ipairs(qs1:GetChildren()) do
+            if child:IsA("Folder") and child.Name:lower():find("basura") then
+                basura = child
+                break
+            end
+        end
+    end
+    if not basura then return end
+
+    for _, child in ipairs(sampahList:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
+    end
+
+    local items = {}
+    for _, obj in ipairs(basura:GetChildren()) do
+        local num = string.match(obj.Name, "^PilaBasura_(%d+)$")
+        if num then
+            local n = tonumber(num)
+            if n and n >= 1 and n <= 11 then
+                table.insert(items, {Name = "Sampah " .. n, Obj = obj})
+            end
+        end
+    end
+    table.sort(items, function(a,b)
+        return tonumber(string.match(a.Name,"%d+")) < tonumber(string.match(b.Name,"%d+"))
+    end)
+
+    for _, item in ipairs(items) do
+        local row = Instance.new("TextButton")
+        row.Size = UDim2.new(1, -4, 0, 22)
+        row.BackgroundColor3 = Color3.fromRGB(58,58,60)
+        row.BackgroundTransparency = 0.35
+        row.Text = item.Name
+        row.TextColor3 = Color3.new(1,1,1)
+        row.Font = Enum.Font.Gotham
+        row.TextSize = 11
+        row.AutoButtonColor = false
+        row.BorderSizePixel = 0
+        row.Parent = sampahList
+        Instance.new("UICorner", row).CornerRadius = UDim.new(0,4)
+
+        row.MouseButton1Click:Connect(function()
+            local pos = nil
+            local obj = item.Obj
+            if obj:IsA("BasePart") then
+                pos = obj.Position
+            elseif obj:IsA("Model") then
+                local pp = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                if pp then pos = pp.Position end
+            elseif obj:IsA("Folder") then
+                for _, c in ipairs(obj:GetDescendants()) do
+                    if c:IsA("BasePart") then pos = c.Position break end
+                end
+            end
+            if pos then
+                local char = Player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,5,0))
+                end
+            end
+        end)
+    end
+    sampahList.CanvasSize = UDim2.new(0,0,0, math.max(#items * 26, 1))
+end
+
+spawn(function()
+    while true do
+        task.wait(2)
+        populateSampah()
+    end
+end)
+
+-- ==================== ITEM 4: Watch the Dolphins ====================
+createItem(mainList, "4. Watch the Dolphins", true,
+    {"EXTERIOR", "PLAYA_DE_PONIENTE", "Beach parasol2"},
+    "Berenang Selama 60 Detik")
+
+-- ==================== ITEM 5: Identify The Fish ====================
+createItem(mainList, "5. Identify The Fish", true,
+    {"EXTERIOR", "ObstaculosMar", "cartel"},
+    "Identify The Fish")
+
+-- Finalize scroll
+task.wait()
+mainList.CanvasSize = UDim2.new(0,0,0, mainLayout.AbsoluteContentSize.Y + 20)
