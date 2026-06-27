@@ -1,0 +1,384 @@
+-- Items TP · iOS Panel (Gentle Proximity Claim + Fixed Auto TP) by SPRUY DARK AI
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ItemsTP_iOS"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- ==================== iOS PANEL ====================
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 320, 0, 360)
+Main.Position = UDim2.new(0.5, -160, 0.5, -180)
+Main.BackgroundColor3 = Color3.fromRGB(22,22,22)
+Main.BackgroundTransparency = 0.20
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0,18)
+Instance.new("UIStroke", Main).Color = Color3.fromRGB(65,65,65)
+Main:FindFirstChildOfClass("UIStroke").Thickness = 1
+Main:FindFirstChildOfClass("UIStroke").Transparency = 0.35
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1,0,0,40)
+TopBar.BackgroundTransparency = 1
+TopBar.Parent = Main
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,-100,1,0)
+Title.Position = UDim2.new(0,15,0,0)
+Title.BackgroundTransparency = 1
+Title.Text = "Items TP (Proximity)"
+Title.TextColor3 = Color3.fromRGB(255,255,255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0,24,0,24)
+MinBtn.Position = UDim2.new(1,-65,0.5,-12)
+MinBtn.Text = "−"
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 18
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.BackgroundColor3 = Color3.fromRGB(255,189,46)
+MinBtn.Parent = TopBar
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1,0)
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,24,0,24)
+CloseBtn.Position = UDim2.new(1,-35,0.5,-12)
+CloseBtn.Text = "×"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 18
+CloseBtn.TextColor3 = Color3.new(1,1,1)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255,95,86)
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1,0)
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1,-20,1,-55)
+Content.Position = UDim2.new(0,10,0,45)
+Content.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Content.BackgroundTransparency = 0.25
+Content.BorderSizePixel = 0
+Content.Parent = Main
+Instance.new("UICorner", Content).CornerRadius = UDim.new(0,14)
+Instance.new("UIStroke", Content).Color = Color3.fromRGB(55,55,55)
+Content:FindFirstChildOfClass("UIStroke").Thickness = 1
+Content:FindFirstChildOfClass("UIStroke").Transparency = 0.45
+
+-- ==================== DRAG ====================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- ==================== MINIMIZE / CLOSE ====================
+local Minimized = false
+local FullSize = Main.Size
+
+MinBtn.MouseButton1Click:Connect(function()
+    Minimized = not Minimized
+    if Minimized then
+        Content.Visible = false
+        TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(0,320,0,40) }):Play()
+    else
+        TweenService:Create(Main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = FullSize }):Play()
+        task.wait(0.2)
+        Content.Visible = true
+    end
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    autoTPActive = false
+    ScreenGui:Destroy()
+end)
+
+-- ==================== FUNGSI DETEKSI ====================
+local function getPosition(obj)
+    if obj:IsA("BasePart") then
+        return obj.Position
+    elseif obj:IsA("Model") then
+        local pp = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        if pp then return pp.Position end
+    elseif obj:IsA("Folder") then
+        for _, child in ipairs(obj:GetDescendants()) do
+            if child:IsA("BasePart") then return child.Position end
+        end
+    end
+    return nil
+end
+
+local function collectItems()
+    local items = {}
+    local itemsFolder = Workspace:FindFirstChild("Items")
+    if not itemsFolder then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Folder") and obj.Name == "Items" then
+                itemsFolder = obj
+                break
+            end
+        end
+    end
+    if not itemsFolder then return items end
+
+    for _, child in ipairs(itemsFolder:GetDescendants()) do
+        if (child:IsA("BasePart") or child:IsA("Model") or child:IsA("Folder")) and string.find(child.Name, "%d") then
+            local pos = getPosition(child)
+            if pos then
+                table.insert(items, {Name = child.Name, Obj = child, Position = pos})
+            end
+        end
+    end
+
+    table.sort(items, function(a, b)
+        local numA = tonumber(string.match(a.Name, "%d+")) or 0
+        local numB = tonumber(string.match(b.Name, "%d+")) or 0
+        return numA < numB
+    end)
+
+    return items
+end
+
+-- Fungsi klaim terbaru: hanya mengandalkan proximity tanpa paksaan
+local function gentleClaim(item)
+    local obj = item.Obj
+    if not obj or not obj.Parent then return false end
+
+    -- 1. Pastikan prompt dalam keadaan aktif
+    for _, child in ipairs(obj:GetDescendants()) do
+        if child:IsA("ProximityPrompt") then
+            child.Enabled = true
+        end
+    end
+
+    -- 2. Dapatkan posisi terkini item
+    local pos = getPosition(obj)
+    if not pos then return false end
+
+    local char = Player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local root = char.HumanoidRootPart
+
+    -- 3. Array posisi di sekitar item untuk mencoba memicu proximity
+    local offsets = {
+        Vector3.new(0, 0, 0),   -- tepat di item
+        Vector3.new(0, 2, 0),   -- sedikit di atas
+        Vector3.new(0, -2, 0),  -- sedikit di bawah
+        Vector3.new(2, 0, 0),   -- kanan
+        Vector3.new(-2, 0, 0),  -- kiri
+        Vector3.new(0, 0, 2),   -- depan
+        Vector3.new(0, 0, -2),  -- belakang
+    }
+
+    -- 4. Coba setiap posisi, beri waktu server mendeteksi proximity
+    for _, offset in ipairs(offsets) do
+        if not obj.Parent then return true end -- item hilang, berhasil!
+        root.CFrame = CFrame.new(pos + offset)
+        -- Beri jeda 0.5 detik di setiap posisi agar prompt sempat terpicu
+        task.wait(0.5)
+    end
+
+    -- 5. Kembali ke posisi item dan tunggu sebentar lagi
+    root.CFrame = CFrame.new(pos)
+    task.wait(0.5)
+
+    return not obj.Parent -- true jika item hilang
+end
+
+-- ==================== AUTO TP (dengan gentle claim) ====================
+local autoTPActive = false
+
+-- ==================== UI CONTENT ====================
+local list = Instance.new("ScrollingFrame")
+list.Size = UDim2.new(1,0,1,-40)
+list.Position = UDim2.new(0,4,0,4)
+list.BackgroundTransparency = 1
+list.BorderSizePixel = 0
+list.ScrollBarThickness = 3
+list.CanvasSize = UDim2.new(0,0,0,0)
+list.Parent = Content
+Instance.new("UICorner", list).CornerRadius = UDim.new(0,8)
+
+local layout = Instance.new("UIListLayout")
+layout.Parent = list
+layout.Padding = UDim.new(0,4)
+
+local buttonBar = Instance.new("Frame")
+buttonBar.Size = UDim2.new(1,0,0,30)
+buttonBar.Position = UDim2.new(0,4,1,-34)
+buttonBar.BackgroundTransparency = 1
+buttonBar.Parent = Content
+
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(0.48,0,1,0)
+refreshBtn.Position = UDim2.new(0,0,0,0)
+refreshBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+refreshBtn.BackgroundTransparency = 0.15
+refreshBtn.Text = "Refresh"
+refreshBtn.TextColor3 = Color3.new(1,1,1)
+refreshBtn.Font = Enum.Font.GothamBold
+refreshBtn.TextSize = 13
+refreshBtn.BorderSizePixel = 0
+refreshBtn.Parent = buttonBar
+Instance.new("UICorner", refreshBtn).CornerRadius = UDim.new(0,8)
+
+local autoBtn = Instance.new("TextButton")
+autoBtn.Size = UDim2.new(0.48,0,1,0)
+autoBtn.Position = UDim2.new(0.52,0,0,0)
+autoBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+autoBtn.BackgroundTransparency = 0.15
+autoBtn.Text = "Auto TP: OFF"
+autoBtn.TextColor3 = Color3.new(1,1,1)
+autoBtn.Font = Enum.Font.GothamBold
+autoBtn.TextSize = 12
+autoBtn.BorderSizePixel = 0
+autoBtn.Parent = buttonBar
+Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
+
+-- ==================== FUNGSI POPULATE ====================
+local function populate()
+    for _, child in ipairs(list:GetChildren()) do
+        if child:IsA("Frame") or child:IsA("TextButton") then child:Destroy() end
+    end
+
+    local items = collectItems()
+    if #items == 0 then
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1,0,0,24)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = "Tidak ada item bernomor"
+        lbl.TextColor3 = Color3.fromRGB(200,200,200)
+        lbl.Font = Enum.Font.Gotham
+        lbl.TextSize = 13
+        lbl.TextXAlignment = Enum.TextXAlignment.Center
+        lbl.Parent = list
+        return
+    end
+
+    for _, item in ipairs(items) do
+        local row = Instance.new("TextButton")
+        row.Size = UDim2.new(1, -4, 0, 36)
+        row.BackgroundColor3 = Color3.fromRGB(44,44,46)
+        row.BackgroundTransparency = 0.15
+        row.Text = ""
+        row.AutoButtonColor = false
+        row.BorderSizePixel = 0
+        row.Parent = list
+        Instance.new("UICorner", row).CornerRadius = UDim.new(0,8)
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -70, 1, 0)
+        nameLabel.Position = UDim2.new(0, 10, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = "●  " .. item.Name
+        nameLabel.TextColor3 = Color3.fromRGB(255,255,255)
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextSize = 14
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.Parent = row
+
+        local tpBtn = Instance.new("TextButton")
+        tpBtn.Size = UDim2.new(0, 60, 0, 28)
+        tpBtn.Position = UDim2.new(1, -70, 0.5, -14)
+        tpBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+        tpBtn.BackgroundTransparency = 0.15
+        tpBtn.Text = "Claim"
+        tpBtn.TextColor3 = Color3.new(1,1,1)
+        tpBtn.Font = Enum.Font.GothamBold
+        tpBtn.TextSize = 14
+        tpBtn.BorderSizePixel = 0
+        Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0,6)
+        tpBtn.Parent = row
+
+        tpBtn.MouseButton1Click:Connect(function()
+            gentleClaim(item)
+        end)
+    end
+
+    task.wait()
+    list.CanvasSize = UDim2.new(0,0,0, layout.AbsoluteContentSize.Y + 20)
+end
+
+-- ==================== EVENT TOMBOL ====================
+refreshBtn.MouseButton1Click:Connect(function()
+    populate()
+end)
+
+autoBtn.MouseButton1Click:Connect(function()
+    autoTPActive = not autoTPActive
+    if autoTPActive then
+        autoBtn.Text = "Auto TP: ON"
+        autoBtn.BackgroundColor3 = Color3.fromRGB(10,132,255)
+        task.spawn(function()
+            while autoTPActive do
+                local items = collectItems()
+                if #items == 0 then
+                    autoTPActive = false
+                    autoBtn.Text = "Auto TP: OFF"
+                    autoBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+                    break
+                end
+                for _, item in ipairs(items) do
+                    if not autoTPActive then break end
+                    gentleClaim(item)
+                    task.wait(0.5) -- jeda lebih santai
+                end
+                -- tambahkan jeda sebelum ulangi siklus, jika masih ada item
+                if autoTPActive then
+                    task.wait(1)
+                end
+            end
+        end)
+    else
+        autoBtn.Text = "Auto TP: OFF"
+        autoBtn.BackgroundColor3 = Color3.fromRGB(44,44,46)
+    end
+end)
+
+-- ==================== POPULATE AWAL ====================
+populate()
