@@ -1,0 +1,402 @@
+-- SPRUY DARK AI • GUIBY MONSTER + AUTO PROMPT + INSTANT PROMPT + WALKSPEED + INFINITE JUMP (Optimized)
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "DarkGuiby"
+gui.ResetOnSpawn = false
+gui.Parent = PlayerGui
+
+-- Warna khas SPRUY DARK AI
+local C = {
+    BG1 = Color3.fromRGB(28, 28, 30),
+    BG2 = Color3.fromRGB(44, 44, 46),
+    BLUE = Color3.fromRGB(10, 132, 255),
+    RED = Color3.fromRGB(255, 69, 58),
+    GREEN = Color3.fromRGB(0, 170, 0),
+    WHITE = Color3.new(1, 1, 1),
+    SUB = Color3.fromRGB(174, 174, 178)
+}
+local function Corner(obj, r)
+    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, r); c.Parent = obj
+end
+
+-- Shadow (diperpanjang)
+local shadow = Instance.new("Frame")
+shadow.Size = UDim2.new(0, 240, 0, 200)
+shadow.Position = UDim2.new(0.5, -120, 0.5, -100)
+shadow.BackgroundColor3 = Color3.new()
+shadow.BackgroundTransparency = 0.88
+shadow.BorderSizePixel = 0
+shadow.Parent = gui
+Corner(shadow, 22)
+
+-- Main Panel (diperpanjang)
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 230, 0, 190)
+main.Position = UDim2.new(0.5, -115, 0.5, -95)
+main.BackgroundColor3 = C.BG1
+main.BackgroundTransparency = 0.15
+main.BorderSizePixel = 0
+main.Active = true
+main.Parent = gui
+Corner(main, 22)
+
+local ORIGINAL_SIZE = main.Size
+local ORIGINAL_POS = main.Position
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 255, 255)
+stroke.Thickness = 1
+stroke.Transparency = 0.93
+stroke.Parent = main
+
+-- Header (Dynamic Island)
+local header = Instance.new("Frame")
+header.Size = UDim2.new(0, 140, 0, 24)
+header.Position = UDim2.new(0.5, -70, 0, 10)
+header.BackgroundColor3 = C.BG2
+header.BackgroundTransparency = 0.15
+header.BorderSizePixel = 0
+header.Parent = main
+Corner(header, 999)
+
+local headerStroke = Instance.new("UIStroke")
+headerStroke.Color = Color3.fromRGB(255, 255, 255)
+headerStroke.Transparency = 0.94
+headerStroke.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.BackgroundTransparency = 1
+title.Text = "Guiby Monster"
+title.Font = Enum.Font.BuilderSansBold
+title.TextSize = 13
+title.TextColor3 = C.WHITE
+title.Parent = header
+
+-- Minimize Button
+local minBtn = Instance.new("TextButton")
+minBtn.Size = UDim2.new(0, 22, 0, 22)
+minBtn.Position = UDim2.new(0, 6, 0, 8)
+minBtn.BackgroundColor3 = C.BG2
+minBtn.Text = "–"
+minBtn.TextColor3 = C.WHITE
+minBtn.Font = Enum.Font.BuilderSansBold
+minBtn.TextSize = 18
+minBtn.BorderSizePixel = 0
+minBtn.Parent = main
+Corner(minBtn, 8)
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 22, 0, 22)
+closeBtn.Position = UDim2.new(1, -28, 0, 8)
+closeBtn.BackgroundColor3 = C.RED
+closeBtn.Text = "×"
+closeBtn.TextColor3 = C.WHITE
+closeBtn.Font = Enum.Font.BuilderSansBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = main
+Corner(closeBtn, 11)
+
+-- Enemies Count
+local countLabel = Instance.new("TextLabel")
+countLabel.Size = UDim2.new(1, -30, 0, 30)
+countLabel.Position = UDim2.new(0, 15, 0, 45)
+countLabel.BackgroundTransparency = 1
+countLabel.Text = "Enemies: 0"
+countLabel.TextColor3 = C.WHITE
+countLabel.Font = Enum.Font.BuilderSansBold
+countLabel.TextSize = 14
+countLabel.TextXAlignment = Enum.TextXAlignment.Left
+countLabel.Parent = main
+
+-- Auto Kill Toggle
+local autoBtn = Instance.new("TextButton")
+autoBtn.Size = UDim2.new(1, -40, 0, 28)
+autoBtn.Position = UDim2.new(0, 20, 0, 82)
+autoBtn.BackgroundColor3 = C.BLUE
+autoBtn.BackgroundTransparency = 0.15
+autoBtn.Text = "Auto Kill: OFF"
+autoBtn.TextColor3 = C.WHITE
+autoBtn.Font = Enum.Font.BuilderSansBold
+autoBtn.TextSize = 13
+autoBtn.BorderSizePixel = 0
+autoBtn.Parent = main
+Corner(autoBtn, 14)
+
+-- Infinite Jump Toggle (BARU)
+local jumpBtn = Instance.new("TextButton")
+jumpBtn.Size = UDim2.new(1, -40, 0, 28)
+jumpBtn.Position = UDim2.new(0, 20, 0, 114)
+jumpBtn.BackgroundColor3 = C.BG2
+jumpBtn.BackgroundTransparency = 0.15
+jumpBtn.Text = "Inf Jump: OFF"
+jumpBtn.TextColor3 = C.WHITE
+jumpBtn.Font = Enum.Font.BuilderSansBold
+jumpBtn.TextSize = 13
+jumpBtn.BorderSizePixel = 0
+jumpBtn.Parent = main
+Corner(jumpBtn, 14)
+
+-- Refresh Button
+local refreshBtn = Instance.new("TextButton")
+refreshBtn.Size = UDim2.new(1, -40, 0, 28)
+refreshBtn.Position = UDim2.new(0, 20, 0, 146)
+refreshBtn.BackgroundColor3 = C.BG2
+refreshBtn.BackgroundTransparency = 0.15
+refreshBtn.Text = "Refresh"
+refreshBtn.TextColor3 = C.WHITE
+refreshBtn.Font = Enum.Font.BuilderSansBold
+refreshBtn.TextSize = 13
+refreshBtn.BorderSizePixel = 0
+refreshBtn.Parent = main
+Corner(refreshBtn, 10)
+
+-- Bubble minimize
+local bubble = Instance.new("TextButton")
+bubble.Size = UDim2.new(0, 60, 0, 30)
+bubble.Position = UDim2.new(1, -70, 1, -40)
+bubble.BackgroundColor3 = C.BG1
+bubble.BackgroundTransparency = 0.15
+bubble.Text = "◉"
+bubble.TextColor3 = C.BLUE
+bubble.Font = Enum.Font.BuilderSansBold
+bubble.TextSize = 18
+bubble.BorderSizePixel = 0
+bubble.Visible = false
+bubble.Parent = gui
+Corner(bubble, 14)
+
+-- Minimize / Restore
+local function minimize()
+    main.Visible = false; shadow.Visible = false; bubble.Visible = true
+end
+local function restore()
+    bubble.Visible = false; main.Visible = true; shadow.Visible = true
+    main.Size = ORIGINAL_SIZE; main.Position = ORIGINAL_POS
+end
+minBtn.MouseButton1Click:Connect(minimize)
+bubble.MouseButton1Click:Connect(restore)
+
+-- Drag (main & bubble)
+local dragTarget = nil; local dragging = false; local dragStart, startPos
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragTarget = main; dragging = true; dragStart = input.Position; startPos = main.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+bubble.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragTarget = bubble; dragging = true; dragStart = input.Position; startPos = bubble.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+UIS.InputChanged:Connect(function(input)
+    if dragging and dragTarget and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        dragTarget.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        if dragTarget == main then shadow.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X -5, startPos.Y.Scale, startPos.Y.Offset + delta.Y -5) end
+    end
+end)
+
+-- ==================== ENGINE ====================
+local enemiesFolder = nil
+spawn(function()
+    while not enemiesFolder do
+        local alives = workspace:FindFirstChild("Alives")
+        if alives then enemiesFolder = alives:FindFirstChild("Enemies") end
+        if not enemiesFolder then
+            for _, v in ipairs(workspace:GetDescendants()) do
+                if v:IsA("Folder") and v.Name == "Enemies" and v.Parent and v.Parent.Name == "Alives" then
+                    enemiesFolder = v; break
+                end
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+local function getHumanoid(obj)
+    local m = obj
+    if obj:IsA("BasePart") then m = obj.Parent end
+    if m and (m:IsA("Model") or m:IsA("Folder")) then return m:FindFirstChildWhichIsA("Humanoid") end
+end
+
+-- ESP otomatis
+local hlts = {}; local playerHlts = {}
+local function clearESP()
+    for _, hl in pairs(hlts) do hl:Destroy() end; hlts = {}
+    for _, hl in pairs(playerHlts) do hl:Destroy() end; playerHlts = {}
+end
+
+local function updateESP()
+    for model, hl in pairs(hlts) do if not model or not model.Parent then hl:Destroy(); hlts[model] = nil end end
+    for char, hl in pairs(playerHlts) do if not char or not char.Parent or not Players:GetPlayerFromCharacter(char) then hl:Destroy(); playerHlts[char] = nil end end
+    if not enemiesFolder then return end
+    for _, v in ipairs(enemiesFolder:GetChildren()) do
+        local hh = getHumanoid(v)
+        if hh and hh.Health > 0 then
+            if not hlts[v] then
+                local hl = Instance.new("Highlight", v)
+                hl.FillColor = Color3.fromRGB(180,180,180); hl.OutlineColor = Color3.new(1,1,1); hl.FillTransparency = 0.5
+                hlts[v] = hl
+            end
+        elseif hlts[v] then hlts[v]:Destroy(); hlts[v] = nil end
+    end
+    for _, other in ipairs(Players:GetPlayers()) do
+        if other ~= Player and other.Character then
+            local char = other.Character
+            if not playerHlts[char] then
+                local hl = Instance.new("Highlight", char)
+                hl.FillColor = Color3.fromRGB(0,255,0); hl.OutlineColor = Color3.new(1,1,1); hl.FillTransparency = 0.5
+                playerHlts[char] = hl
+            end
+        end
+    end
+end
+
+-- Auto Kill
+local autoOn = false
+local function killEn(d)
+    if not d.Humanoid or d.Humanoid.Health <= 0 then return end
+    local hh = d.Humanoid
+    for _, tag in ipairs({"creator","killTag","source"}) do
+        local obj = hh:FindFirstChild(tag) or Instance.new("ObjectValue", hh); obj.Name = tag; pcall(function() obj.Value = Player end)
+    end
+    pcall(function() hh:TakeDamage(hh.MaxHealth + 1) end)
+    task.wait(0.1)
+    if hh.Health > 0 then pcall(function() hh.Health = 0 end) end
+end
+local function killAll()
+    if not enemiesFolder then return end
+    for _, v in ipairs(enemiesFolder:GetChildren()) do
+        local hh = getHumanoid(v)
+        if hh and hh.Health > 0 then killEn({Model = v, Humanoid = hh}); task.wait(0.05) end
+    end
+end
+
+-- WalkSpeed 35 (otomatis)
+spawn(function()
+    while gui and gui.Parent do
+        local char = Player.Character
+        if char then
+            local hh = char:FindFirstChildWhichIsA("Humanoid")
+            if hh then hh.WalkSpeed = 35 end
+        end
+        task.wait(0.3) -- diperlambat sedikit untuk optimasi
+    end
+end)
+
+-- Infinite Jump (optimized)
+local infJumpEnabled = false
+local infJumpConn = nil
+
+local function enableInfJump()
+    if infJumpConn then return end
+    infJumpConn = UIS.JumpRequest:Connect(function()
+        if not infJumpEnabled then return end
+        local char = Player.Character
+        if char then
+            local hh = char:FindFirstChildWhichIsA("Humanoid")
+            if hh then hh:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
+end
+
+local function disableInfJump()
+    if infJumpConn then infJumpConn:Disconnect(); infJumpConn = nil end
+end
+
+-- Auto Proximity Prompt (fireproximityprompt)
+local autoPromptConn = nil
+autoPromptConn = RunService.Heartbeat:Connect(function()
+    local char = Player.Character; if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart"); if not root then return end
+    local bestDist, bestPrompt = 100, nil
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and obj.Parent then
+            local parent = obj.Parent
+            local pos = parent:IsA("BasePart") and parent.Position or (parent:IsA("Model") and parent.PrimaryPart and parent.PrimaryPart.Position)
+            if pos then
+                local dist = (root.Position - pos).Magnitude
+                if dist <= 100 and dist < bestDist then bestDist = dist; bestPrompt = obj end
+            end
+        end
+    end
+    if bestPrompt then pcall(function() fireproximityprompt(bestPrompt) end) end
+end)
+
+-- Instant Proximity Prompt (PromptButtonHoldBegan)
+local instantPromptConn = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt, plr)
+    if plr == Player then fireproximityprompt(prompt) end
+end)
+
+-- Matikan fitur prompt saat GUI dihancurkan
+local function disableAllPrompts()
+    if autoPromptConn then autoPromptConn:Disconnect(); autoPromptConn = nil end
+    if instantPromptConn then instantPromptConn:Disconnect(); instantPromptConn = nil end
+end
+
+-- Loop utama (update ESP, count, auto kill) – dioptimalkan dengan jeda lebih besar
+local loopActive = true
+spawn(function()
+    while loopActive do
+        updateESP()
+        if enemiesFolder then
+            local count = 0
+            for _, v in ipairs(enemiesFolder:GetChildren()) do
+                local hh = getHumanoid(v)
+                if hh and hh.Health > 0 then count = count + 1 end
+            end
+            countLabel.Text = "Enemies: " .. count
+            if autoOn and count > 0 then killAll() end
+        else
+            countLabel.Text = "Enemies: ?"
+        end
+        task.wait(0.5) -- dari 0.3 ke 0.5 untuk mengurangi beban
+    end
+end)
+
+-- Toggle Auto Kill
+autoBtn.MouseButton1Click:Connect(function()
+    autoOn = not autoOn
+    autoBtn.Text = "Auto Kill: " .. (autoOn and "ON" or "OFF")
+    autoBtn.BackgroundColor3 = autoOn and C.RED or C.BLUE
+end)
+
+-- Toggle Infinite Jump
+jumpBtn.MouseButton1Click:Connect(function()
+    infJumpEnabled = not infJumpEnabled
+    jumpBtn.Text = "Inf Jump: " .. (infJumpEnabled and "ON" or "OFF")
+    jumpBtn.BackgroundColor3 = infJumpEnabled and C.GREEN or C.BG2
+    if infJumpEnabled then enableInfJump() else disableInfJump() end
+end)
+
+-- Refresh
+refreshBtn.MouseButton1Click:Connect(function()
+    if enemiesFolder then
+        local count = 0
+        for _, v in ipairs(enemiesFolder:GetChildren()) do
+            local hh = getHumanoid(v); if hh and hh.Health > 0 then count = count + 1 end
+        end
+        countLabel.Text = "Enemies: " .. count
+    end
+end)
+
+-- Close Cleanup
+closeBtn.MouseButton1Click:Connect(function()
+    loopActive = false; clearESP(); disableAllPrompts(); disableInfJump(); gui:Destroy()
+end)
+gui.Destroying:Connect(function()
+    loopActive = false; clearESP(); disableAllPrompts(); disableInfJump()
+end)
